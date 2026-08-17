@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "tsc",
     "watch": "tsc -w",
-    "prepare": "npm run compile"
+    "prepare": "tsc"
   },
   "bin": {
     "slack-archive": "./bin/slack-archive.js"
