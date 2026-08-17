@@ -49,28 +49,34 @@ export async function downloadMessages(
     `Downloading messages for channel ${i + 1}/${channelCount} (${name})...`
   ).start();
 
-  for await (const page of getWebClient().paginate("conversations.history", {
-    channel: channel.id,
-    oldest,
-  })) {
-    if (isConversation(page)) {
-      const pageLength = page.messages?.length || 0;
-      const fetched = `Fetched ${pageLength} messages`;
-      const total = `(total so far: ${result.messages.length + pageLength}`;
+  try {
+    for await (const page of getWebClient().paginate("conversations.history", {
+      channel: channel.id,
+      oldest,
+    })) {
+      if (isConversation(page)) {
+        const pageLength = page.messages?.length || 0;
+        const fetched = `Fetched ${pageLength} messages`;
+        const total = `(total so far: ${result.messages.length + pageLength}`;
 
-      spinner.text = `Downloading ${
-        i + 1
-      }/${channelCount} ${name}: ${fetched} ${total})`;
+        spinner.text = `Downloading ${
+          i + 1
+        }/${channelCount} ${name}: ${fetched} ${total})`;
 
-      result.new = result.new + (page.messages || []).length;
+        result.new = result.new + (page.messages || []).length;
 
-      result.messages.unshift(...(page.messages || []));
+        result.messages.unshift(...(page.messages || []));
+      }
     }
-  }
 
-  spinner.succeed(
-    `Downloaded messages for channel ${i + 1}/${channelCount} (${name})`
-  );
+    spinner.succeed(
+      `Downloaded messages for channel ${i + 1}/${channelCount} (${name})`
+    );
+  } catch (error: any) {
+    spinner.fail(
+      `Failed to download messages for channel ${i + 1}/${channelCount} (${name}): ${error.message}`
+    );
+  }
 
   return result;
 }
@@ -97,14 +103,21 @@ export async function downloadReplies(
   const replies = message.replies || [];
   // Oldest is the last entry
   const oldest = replies.length > 0 ? replies[replies.length - 1].ts : "0";
-  const result = await getWebClient().conversations.replies({
-    channel: channel.id,
-    ts: message.ts,
-    oldest,
-  });
+  try {
+    const result = await getWebClient().conversations.replies({
+      channel: channel.id,
+      ts: message.ts,
+      oldest,
+    });
 
-  // First message is the parent
-  return (result.messages || []).slice(1);
+    // First message is the parent
+    return (result.messages || []).slice(1);
+  } catch (error: any) {
+    console.warn(
+      `Failed to download replies for message ${message.ts} in channel ${channel.id}: ${error.message}`
+    );
+    return [];
+  }
 }
 
 export async function downloadExtras(

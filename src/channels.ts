@@ -70,7 +70,15 @@ export async function downloadChannels(
         }
       }
 
-      channels.push(...pageChannels);
+      // Filter out slackbot channel to prevent channel_not_found error
+      const filteredChannels = pageChannels.filter((channel) => {
+        if (channel.user === "USLACKBOT" || channel.name === "slackbot") {
+          return false;
+        }
+        return true;
+      });
+
+      channels.push(...filteredChannels);
     }
   }
 
